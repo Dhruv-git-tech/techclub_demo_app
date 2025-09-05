@@ -5,7 +5,7 @@ import pandas as pd
 # Mock Login Data
 # -----------------------------
 USERS = {
-    "admin": {"password": "admin123", "role": "Admin"},
+    "admin": {"password": "dhruv", "role": "Admin"},
     "core_lead": {"password": "core123", "role": "Team Lead", "team": "Core Team"},
     "tech_lead": {"password": "tech123", "role": "Team Lead", "team": "Technical Team"},
     "event_lead": {"password": "event123", "role": "Team Lead", "team": "Event Planning"},
