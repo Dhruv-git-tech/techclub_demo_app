@@ -1,7 +1,6 @@
 # techclub_demo_app.py
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 from datetime import datetime
 
 # ---------------- CONFIG ----------------
@@ -83,8 +82,8 @@ else:
         col2.metric("Upcoming Events", EVENTS[EVENTS['status']=="Open"].shape[0])
         col3.metric("Ongoing Projects", sum(1 for p in PROJECTS if p["status"]=="In Progress"))
 
-        fig = px.pie(FINANCES, names="Category", values="Amount", title="Club Finances")
-        st.plotly_chart(fig, use_container_width=True)
+        st.subheader("Club Finances Overview")
+        st.bar_chart(FINANCES.set_index("Category"))
 
     # ---------------- EVENTS ----------------
     elif menu == "Events":
@@ -118,8 +117,7 @@ else:
     elif menu == "Finances":
         st.title("💰 Club Finances")
         st.dataframe(FINANCES)
-        fig = px.bar(FINANCES, x="Category", y="Amount", color="Category")
-        st.plotly_chart(fig)
+        st.bar_chart(FINANCES.set_index("Category"))
 
     # ---------------- ANNOUNCEMENTS ----------------
     elif menu == "Announcements":
