@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 
 # -------------------------------
 # Sample Users and Roles
@@ -63,7 +64,7 @@ teams = {
 }
 
 # -------------------------------
-# Authentication
+# Session State Init
 # -------------------------------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -71,47 +72,80 @@ if "logged_in" not in st.session_state:
     st.session_state.role = ""
     st.session_state.team = ""
 
-st.title("🚀 DevCatalyst | MECS Tech Club Management")
+# -------------------------------
+# Futuristic Theme Styling
+# -------------------------------
+st.markdown("""
+    <style>
+    body { background-color: #0e1117; color: #fff; }
+    .stProgress > div > div > div > div { background-image: linear-gradient(to right, #8e40ff , #00e6ff); }
+    .big-font { font-size:24px !important; font-weight:700; color:#00e6ff; }
+    .card {
+        background-color: #161a23;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 0 15px rgba(142,64,255,0.4);
+        margin-bottom: 20px;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
+st.title("💻🚀 DevCatalyst | MECS Tech Club Management")
+
+# -------------------------------
+# Login Page
+# -------------------------------
 if not st.session_state.logged_in:
     st.subheader("🔑 Login to Continue")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
-    if st.button("Login"):
+    if st.button("Login", use_container_width=True):
         if username in users and users[username]["password"] == password:
             st.session_state.logged_in = True
             st.session_state.username = username
             st.session_state.role = users[username]["role"]
             st.session_state.team = users[username].get("team", "")
             st.success(f"✅ Welcome {username} ({st.session_state.role})")
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("❌ Invalid username or password")
 
+# -------------------------------
+# Logged-in Views
+# -------------------------------
 else:
     role = st.session_state.role
     username = st.session_state.username
 
     st.sidebar.title("📌 Navigation")
     st.sidebar.write(f"👤 Logged in as: **{username} ({role})**")
-    if st.sidebar.button("Logout"):
+    if st.sidebar.button("🚪 Logout"):
         st.session_state.logged_in = False
-        st.experimental_rerun()
+        st.rerun()
 
     # -------------------------------
     # Admin Dashboard
     # -------------------------------
     if role == "Admin":
         st.header("🛠️ Admin Dashboard")
+
+        # Team Summary Chart
+        st.subheader("📊 Team Progress Overview")
+        summary = {team: int(sum(details["tasks"].values())/len(details["tasks"])) for team, details in teams.items()}
+        df = pd.DataFrame.from_dict(summary, orient="index", columns=["Progress %"])
+        st.bar_chart(df)
+
+        st.markdown("---")
+        # Detailed Team Cards
         for team, details in teams.items():
-            st.subheader(f"👥 {team}")
+            st.markdown(f"<div class='card'><span class='big-font'>👥 {team}</span>", unsafe_allow_html=True)
             st.write(f"**Team Lead:** {details['lead']}")
             st.write(f"**Members:** {', '.join(details['members'])}")
             st.write("📌 **Tasks & Progress**")
             for task, progress in details["tasks"].items():
                 st.progress(progress / 100)
                 st.write(f"{task}: {progress}% complete")
-            st.markdown("---")
+            st.markdown("</div>", unsafe_allow_html=True)
 
     # -------------------------------
     # Team Lead Dashboard
@@ -119,12 +153,14 @@ else:
     elif role == "Lead":
         team = st.session_state.team
         st.header(f"👑 Team Lead Dashboard - {team}")
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
         st.write(f"**Members:** {', '.join(teams[team]['members'])}")
-        st.write("📌 **Tasks & Progress**")
+        st.write("📌 **Tasks & Progress** (Update below)")
         for task, progress in teams[team]["tasks"].items():
             new_val = st.slider(f"{task}", 0, 100, progress)
             teams[team]["tasks"][task] = new_val
             st.progress(new_val / 100)
+        st.markdown("</div>", unsafe_allow_html=True)
 
     # -------------------------------
     # Member Dashboard
@@ -132,6 +168,9 @@ else:
     elif role == "Member":
         team = st.session_state.team
         st.header(f"🙋 Member Dashboard - {team}")
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
         st.write("📌 **Your Tasks**")
         for task, progress in teams[team]["tasks"].items():
+            st.progress(progress / 100)
             st.write(f"- {task}: {progress}% complete")
+        st.markdown("</div>", unsafe_allow_html=True)
