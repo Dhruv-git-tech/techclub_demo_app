@@ -1,176 +1,235 @@
 import streamlit as st
 import pandas as pd
 
-# -------------------------------
-# Sample Users and Roles
-# -------------------------------
-users = {
+# -----------------------------
+# Mock Login Data
+# -----------------------------
+USERS = {
     "admin": {"password": "admin123", "role": "Admin"},
-    "core_lead": {"password": "core123", "role": "Lead", "team": "Core Team"},
-    "core_member1": {"password": "member123", "role": "Member", "team": "Core Team"},
-    "tech_lead": {"password": "tech123", "role": "Lead", "team": "Technical Team"},
-    "tech_member1": {"password": "member123", "role": "Member", "team": "Technical Team"},
-    "general_lead": {"password": "general123", "role": "Lead", "team": "General"},
-    "general_member1": {"password": "member123", "role": "Member", "team": "General"},
-    "rep_lead": {"password": "rep123", "role": "Lead", "team": "Representatives"},
-    "rep_member1": {"password": "member123", "role": "Member", "team": "Representatives"},
-    "event_lead": {"password": "event123", "role": "Lead", "team": "Event Planning"},
-    "event_member1": {"password": "member123", "role": "Member", "team": "Event Planning"},
-    "smedia_lead": {"password": "smedia123", "role": "Lead", "team": "Social Media Team"},
-    "smedia_member1": {"password": "member123", "role": "Member", "team": "Social Media Team"},
-    "outreach_lead": {"password": "outreach123", "role": "Lead", "team": "Outreach Team"},
-    "outreach_member1": {"password": "member123", "role": "Member", "team": "Outreach Team"},
+    "core_lead": {"password": "core123", "role": "Team Lead", "team": "Core Team"},
+    "tech_lead": {"password": "tech123", "role": "Team Lead", "team": "Technical Team"},
+    "event_lead": {"password": "event123", "role": "Team Lead", "team": "Event Planning"},
+    "social_lead": {"password": "social123", "role": "Team Lead", "team": "Social Media Team"},
+    "outreach_lead": {"password": "outreach123", "role": "Team Lead", "team": "Outreach Team"},
+    "rep_lead": {"password": "rep123", "role": "Team Lead", "team": "Representatives"},
+    "general_member": {"password": "member123", "role": "Member", "team": "General"},
 }
 
-# -------------------------------
-# Sample Teams and Tasks
-# -------------------------------
-teams = {
-    "Core Team": {
-        "lead": "core_lead",
-        "members": ["core_member1"],
-        "tasks": {"Plan semester roadmap": 80, "Host orientation event": 50}
-    },
-    "Technical Team": {
-        "lead": "tech_lead",
-        "members": ["tech_member1"],
-        "tasks": {"Hackathon planning": 40, "Workshop on AI": 70}
-    },
-    "General": {
-        "lead": "general_lead",
-        "members": ["general_member1"],
-        "tasks": {"Maintain WhatsApp updates": 90}
-    },
-    "Representatives": {
-        "lead": "rep_lead",
-        "members": ["rep_member1"],
-        "tasks": {"Collect feedback from classes": 60}
-    },
-    "Event Planning": {
-        "lead": "event_lead",
-        "members": ["event_member1"],
-        "tasks": {"Annual Tech Fest": 30, "Weekly meetups": 50}
-    },
-    "Social Media Team": {
-        "lead": "smedia_lead",
-        "members": ["smedia_member1"],
-        "tasks": {"Instagram campaign": 75, "Event posters": 65}
-    },
-    "Outreach Team": {
-        "lead": "outreach_lead",
-        "members": ["outreach_member1"],
-        "tasks": {"Industry connections": 20, "Guest talks": 40}
-    }
+TEAM_INFO = {
+    "Core Team": {"lead": "Core Lead", "focus": "Strategy & Leadership", "color": "linear-gradient(45deg, #8e2de2, #4a00e0)"},
+    "Technical Team": {"lead": "Tech Lead", "focus": "Coding & Projects", "color": "linear-gradient(45deg, #00c6ff, #0072ff)"},
+    "Event Planning": {"lead": "Event Lead", "focus": "Workshops & Logistics", "color": "linear-gradient(45deg, #ff416c, #ff4b2b)"},
+    "Social Media Team": {"lead": "Social Lead", "focus": "Content & Branding", "color": "linear-gradient(45deg, #ff9a9e, #fad0c4)"},
+    "Outreach Team": {"lead": "Outreach Lead", "focus": "Partnerships & Sponsors", "color": "linear-gradient(45deg, #11998e, #38ef7d)"},
+    "Representatives": {"lead": "Rep Lead", "focus": "Student Connect", "color": "linear-gradient(45deg, #f7971e, #ffd200)"},
+    "General": {"lead": "N/A", "focus": "Learning & Growth", "color": "linear-gradient(45deg, #36d1dc, #5b86e5)"},
 }
 
-# -------------------------------
-# Session State Init
-# -------------------------------
+# -----------------------------
+# Init Session Data
+# -----------------------------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
-    st.session_state.username = ""
-    st.session_state.role = ""
-    st.session_state.team = ""
+if "user" not in st.session_state:
+    st.session_state.user = None
+if "events" not in st.session_state:
+    st.session_state.events = []
+if "tasks" not in st.session_state:
+    st.session_state.tasks = []
+if "scores" not in st.session_state:
+    st.session_state.scores = {"Alice": 50, "Bob": 30, "Charlie": 20}
 
-# -------------------------------
-# Futuristic Theme Styling
-# -------------------------------
+# -----------------------------
+# Auth Functions
+# -----------------------------
+def login(username, password):
+    if username in USERS and USERS[username]["password"] == password:
+        st.session_state.logged_in = True
+        st.session_state.user = USERS[username]
+        st.rerun()
+    else:
+        st.error("❌ Invalid username or password")
+
+def logout():
+    st.session_state.logged_in = False
+    st.session_state.user = None
+    st.rerun()
+
+# -----------------------------
+# Custom CSS Styling
+# -----------------------------
+st.set_page_config(page_title="DevCatalyst | MECS Tech Club", layout="wide")
+
 st.markdown("""
     <style>
-    body { background-color: #0e1117; color: #fff; }
-    .stProgress > div > div > div > div { background-image: linear-gradient(to right, #8e40ff , #00e6ff); }
-    .big-font { font-size:24px !important; font-weight:700; color:#00e6ff; }
-    .card {
-        background-color: #161a23;
-        padding: 20px;
+    body { background-color: #0d0d1f; color: #ffffff; }
+    .banner {
+        background: linear-gradient(90deg, #8e2de2, #4a00e0);
+        color: white;
+        text-align: center;
+        padding: 3rem 1rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+    }
+    .section {
+        padding: 2rem;
+        margin: 1rem 0;
         border-radius: 12px;
-        box-shadow: 0 0 15px rgba(142,64,255,0.4);
-        margin-bottom: 20px;
+        background: #1a1a2e;
+    }
+    .team-card {
+        padding: 1rem;
+        border-radius: 12px;
+        color: white;
+        margin: 0.5rem;
+        text-align: center;
+        font-weight: 600;
+        box-shadow: 0px 4px 12px rgba(0,0,0,0.5);
+    }
+    .stButton button {
+        background: linear-gradient(45deg, #00eaff, #8e40ff);
+        color: white; border-radius: 12px; border: none;
+        padding: 0.7rem 1.2rem; font-weight: 600;
+    }
+    .stButton button:hover {
+        background: linear-gradient(45deg, #8e40ff, #00eaff);
+        color: black;
     }
     </style>
 """, unsafe_allow_html=True)
 
-st.title("💻🚀 DevCatalyst | MECS Tech Club Management")
-
-# -------------------------------
-# Login Page
-# -------------------------------
+# -----------------------------
+# Landing Page
+# -----------------------------
 if not st.session_state.logged_in:
+    # Banner
+    st.markdown("""
+        <div class="banner">
+            <h1>👨‍💻🚀 DevCatalyst | MECS Tech Club</h1>
+            <h3>💡 Catalyzing Innovation, Developing Excellence</h3>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # About Section
+    st.markdown("""
+    <div class="section">
+    <h2>📌 What We Do</h2>
+    <ul>
+        <li>⚡ Tech workshops & coding challenges</li>
+        <li>🎤 Guest talks & mentorship from industry pros</li>
+        <li>🚀 Startup ideation & project showcases</li>
+        <li>🌐 Internship and networking opportunities</li>
+    </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Team Cards Section
+    st.markdown("<h2 style='text-align:center;'>👥 Our Teams</h2>", unsafe_allow_html=True)
+    cols = st.columns(3)
+    i = 0
+    for team, info in TEAM_INFO.items():
+        with cols[i % 3]:
+            st.markdown(
+                f"""
+                <div class="team-card" style="background:{info['color']}">
+                    <h3>{team}</h3>
+                    <p>👑 Lead: {info['lead']}</p>
+                    <p>🎯 Focus: {info['focus']}</p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        i += 1
+
+    # Opportunities Section
+    st.markdown("""
+    <div class="section">
+    <h2>🎯 Opportunities</h2>
+    <p>Stay connected, stay ahead. Let's bridge the gap between <b>classroom and career</b>!  
+    ✨ Skill-building | 🤝 Collaboration | 📅 Regular updates</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Login Form
     st.subheader("🔑 Login to Continue")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-    if st.button("Login", use_container_width=True):
-        if username in users and users[username]["password"] == password:
-            st.session_state.logged_in = True
-            st.session_state.username = username
-            st.session_state.role = users[username]["role"]
-            st.session_state.team = users[username].get("team", "")
-            st.success(f"✅ Welcome {username} ({st.session_state.role})")
-            st.rerun()
-        else:
-            st.error("❌ Invalid username or password")
+    username = st.text_input("👤 Username")
+    password = st.text_input("🔒 Password", type="password")
+    if st.button("Login ➝"):
+        login(username, password)
 
-# -------------------------------
-# Logged-in Views
-# -------------------------------
+# -----------------------------
+# Logged-in Dashboards
+# -----------------------------
 else:
-    role = st.session_state.role
-    username = st.session_state.username
-
-    st.sidebar.title("📌 Navigation")
-    st.sidebar.write(f"👤 Logged in as: **{username} ({role})**")
+    user = st.session_state.user
+    role = user['role']
+    st.sidebar.success(f"✅ Logged in as {role}")
     if st.sidebar.button("🚪 Logout"):
-        st.session_state.logged_in = False
-        st.rerun()
+        logout()
 
-    # -------------------------------
-    # Admin Dashboard
-    # -------------------------------
     if role == "Admin":
-        st.header("🛠️ Admin Dashboard")
+        st.header("📊 Admin Dashboard")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("👥 Total Members", "68")
+        col2.metric("📅 Events", str(len(st.session_state.events)))
+        col3.metric("✅ Tasks", str(len(st.session_state.tasks)))
 
-        # Team Summary Chart
-        st.subheader("📊 Team Progress Overview")
-        summary = {team: int(sum(details["tasks"].values())/len(details["tasks"])) for team, details in teams.items()}
-        df = pd.DataFrame.from_dict(summary, orient="index", columns=["Progress %"])
-        st.bar_chart(df)
+        st.subheader("👥 Team Overview")
+        team_data = pd.DataFrame({
+            "Team": list(TEAM_INFO.keys()),
+            "Members": [8, 12, 6, 5, 7, 10, 20],
+            "Active Projects": [3, 5, 2, 4, 3, 1, 0]
+        })
+        st.dataframe(team_data)
+        st.bar_chart(team_data.set_index("Team")["Members"])
 
-        st.markdown("---")
-        # Detailed Team Cards
-        for team, details in teams.items():
-            st.markdown(f"<div class='card'><span class='big-font'>👥 {team}</span>", unsafe_allow_html=True)
-            st.write(f"**Team Lead:** {details['lead']}")
-            st.write(f"**Members:** {', '.join(details['members'])}")
-            st.write("📌 **Tasks & Progress**")
-            for task, progress in details["tasks"].items():
-                st.progress(progress / 100)
-                st.write(f"{task}: {progress}% complete")
-            st.markdown("</div>", unsafe_allow_html=True)
+        st.subheader("🏆 Leaderboard")
+        leaderboard = pd.DataFrame.from_dict(st.session_state.scores, orient="index", columns=["Points"])
+        leaderboard = leaderboard.sort_values("Points", ascending=False)
+        st.table(leaderboard)
 
-    # -------------------------------
-    # Team Lead Dashboard
-    # -------------------------------
-    elif role == "Lead":
-        team = st.session_state.team
-        st.header(f"👑 Team Lead Dashboard - {team}")
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.write(f"**Members:** {', '.join(teams[team]['members'])}")
-        st.write("📌 **Tasks & Progress** (Update below)")
-        for task, progress in teams[team]["tasks"].items():
-            new_val = st.slider(f"{task}", 0, 100, progress)
-            teams[team]["tasks"][task] = new_val
-            st.progress(new_val / 100)
-        st.markdown("</div>", unsafe_allow_html=True)
+    elif role == "Team Lead":
+        st.header(f"👑 {user['team']} Lead Dashboard")
+        tab1, tab2 = st.tabs(["📅 Manage Events", "✅ Assign Tasks"])
 
-    # -------------------------------
-    # Member Dashboard
-    # -------------------------------
+        with tab1:
+            st.subheader("Create Event")
+            title = st.text_input("📝 Event Title")
+            date = st.date_input("📆 Date")
+            desc = st.text_area("🖊️ Description")
+            if st.button("Add Event 🎉"):
+                st.session_state.events.append({"team": user["team"], "title": title, "date": str(date), "desc": desc})
+                st.balloons()
+                st.success("Event added!")
+                st.rerun()
+            st.write("### Your Events")
+            df = [e for e in st.session_state.events if e["team"] == user["team"]]
+            if df: st.table(pd.DataFrame(df))
+            else: st.info("No events yet.")
+
+        with tab2:
+            st.subheader("Assign Task")
+            member = st.text_input("👤 Member Name")
+            task = st.text_input("📝 Task")
+            if st.button("Assign Task ✅"):
+                st.session_state.tasks.append({"team": user["team"], "member": member, "task": task, "status": "Pending"})
+                st.session_state.scores[member] = st.session_state.scores.get(member, 0) + 10
+                st.snow()
+                st.success(f"Task assigned to {member}")
+                st.rerun()
+            st.write("### Your Tasks")
+            df = [t for t in st.session_state.tasks if t["team"] == user["team"]]
+            if df: st.table(pd.DataFrame(df))
+            else: st.info("No tasks yet.")
+
     elif role == "Member":
-        team = st.session_state.team
-        st.header(f"🙋 Member Dashboard - {team}")
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.write("📌 **Your Tasks**")
-        for task, progress in teams[team]["tasks"].items():
-            st.progress(progress / 100)
-            st.write(f"- {task}: {progress}% complete")
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.header(f"🙋 {user['team']} Member Dashboard")
+        st.subheader("📅 Events")
+        events = [e for e in st.session_state.events if e["team"] == user["team"]]
+        if events: st.table(pd.DataFrame(events))
+        else: st.info("No events for your team yet.")
+        
+        st.subheader("✅ Your Tasks")
+        tasks = [t for t in st.session_state.tasks if t["team"] == user["team"]]
+        if tasks: st.table(pd.DataFrame(tasks))
+        else: st.info("No tasks yet.")
