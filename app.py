@@ -5,6 +5,38 @@ import random
 st.set_page_config(page_title="DevCatalyst Club Manager", layout="wide")
 
 # -----------------------
+# Custom Styling (Dark Neon)
+# -----------------------
+st.markdown("""
+<style>
+body {
+    background-color: #0d0d0d;
+    color: #f0f0f0;
+    font-family: 'Inter', sans-serif;
+}
+h1, h2, h3, h4 {
+    color: #8e40ff;
+}
+.stButton>button {
+    background: linear-gradient(90deg, #8e40ff, #00e6ff);
+    color: white;
+    border-radius: 12px;
+    border: none;
+    padding: 0.6em 1.2em;
+    font-weight: bold;
+    transition: 0.3s;
+}
+.stButton>button:hover {
+    background: linear-gradient(90deg, #00e6ff, #8e40ff);
+    transform: scale(1.05);
+}
+.stProgress > div > div > div {
+    background-color: #8e40ff !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# -----------------------
 # Mock Users & Teams
 # -----------------------
 USERS = {
@@ -23,6 +55,9 @@ TEAM_INFO = {
     "Cybersecurity Team": {"lead": None, "focus": "Security Research"},
 }
 
+# -----------------------
+# Session State Defaults
+# -----------------------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.role = None
@@ -90,8 +125,7 @@ def admin_dashboard():
                 st.info("No tasks assigned yet.")
 
             # Lead activity
-            lead_username = info["lead"]
-            if lead_username:
+            if info["lead"]:
                 events_by_lead = [e for e in st.session_state.events if e["team"] == team]
                 tasks_by_lead = [t for t in st.session_state.tasks if t["team"] == team]
                 st.write("📊 **Team Lead Activity**")
@@ -125,7 +159,7 @@ def admin_dashboard():
     # Leaderboard
     st.subheader("🏆 Global Leaderboard")
     leaderboard_data = []
-    for team, info in TEAM_INFO.items():
+    for team in TEAM_INFO:
         for i in range(5):
             name = f"{team} Member {i+1}"
             points = random.randint(20, 100)
@@ -139,7 +173,6 @@ def admin_dashboard():
 def team_lead_dashboard():
     team = USERS[st.session_state.username]["team"]
     st.title(f"👨‍🏫 Team Lead Dashboard – {team}")
-    st.write("Manage your team’s tasks and events here.")
     task_title = st.text_input("New Task Title")
     if st.button("Assign Task"):
         st.session_state.tasks.append({"task": task_title, "team": team, "status": "Pending"})
@@ -154,7 +187,6 @@ def team_lead_dashboard():
 def member_dashboard():
     team = USERS[st.session_state.username]["team"]
     st.title(f"🙋 Member Dashboard – {team}")
-    st.write("View your tasks and events.")
     personal_tasks = [
         {"Task": f"Task {i+1}", "Status": "Completed" if i % 2 == 0 else "Pending"}
         for i in range(5)
@@ -175,13 +207,17 @@ def guest_view():
 # -----------------------
 # Main
 # -----------------------
-if not st.session_state.logged_in:
+if not st.session_state.get("logged_in", False):
     login()
 else:
-    role = st.session_state.role
     if st.button("🚪 Logout"):
         st.session_state.logged_in = False
+        st.session_state.role = None
+        st.session_state.username = None
         st.rerun()
+
+    role = st.session_state.get("role", None)
+
     if role == "Admin":
         admin_dashboard()
     elif role == "Team Lead":
