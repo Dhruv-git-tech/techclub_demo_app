@@ -28,17 +28,18 @@ USERS = {
     "guest": {"password": "123", "role": "Guest/Sponsor"},
 }
 
+if "PROJECTS" not in st.session_state:
+    st.session_state["PROJECTS"] = [
+        {"title": "Smart Campus App", "status": "To Do", "tech": "Flutter + Firebase"},
+        {"title": "AI Research Portal", "status": "In Progress", "tech": "Python + ML"},
+        {"title": "Club Website Revamp", "status": "Completed", "tech": "Next.js + Supabase"},
+    ]
+
 EVENTS = pd.DataFrame([
     {"title": "Hackathon 2025", "date": "2025-09-15", "venue": "Main Hall", "capacity": 200, "status": "Open"},
     {"title": "AI Workshop", "date": "2025-09-20", "venue": "Lab 3", "capacity": 50, "status": "Open"},
     {"title": "Tech Talk: Future of Web", "date": "2025-09-25", "venue": "Auditorium", "capacity": 300, "status": "Closed"},
 ])
-
-PROJECTS = [
-    {"title": "Smart Campus App", "status": "In Progress", "tech": "Flutter + Firebase"},
-    {"title": "AI Research Portal", "status": "Planning", "tech": "Python + ML"},
-    {"title": "Club Website Revamp", "status": "Completed", "tech": "Next.js + Supabase"},
-]
 
 MEMBERS = pd.DataFrame([
     {"name": "Alice", "year": "3rd", "skills": "Python, ML"},
@@ -63,7 +64,7 @@ if not st.session_state["auth_user"]:
     if st.button("Login"):
         if username in USERS and USERS[username]["password"] == password:
             st.session_state["auth_user"] = USERS[username]
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("Invalid username or password")
 else:
@@ -72,7 +73,7 @@ else:
     menu = st.sidebar.radio("Navigate", ["Dashboard","Events","Projects","Members","Finances","Announcements","Certificates"])
     if st.sidebar.button("Logout"):
         st.session_state["auth_user"] = None
-        st.experimental_rerun()
+        st.rerun()
 
     # ---------------- DASHBOARD ----------------
     if menu == "Dashboard":
@@ -80,7 +81,7 @@ else:
         col1, col2, col3 = st.columns(3)
         col1.metric("Active Members", len(MEMBERS))
         col2.metric("Upcoming Events", EVENTS[EVENTS['status']=="Open"].shape[0])
-        col3.metric("Ongoing Projects", sum(1 for p in PROJECTS if p["status"]=="In Progress"))
+        col3.metric("Ongoing Projects", sum(1 for p in st.session_state["PROJECTS"] if p["status"]=="In Progress"))
 
         st.subheader("Club Finances Overview")
         st.bar_chart(FINANCES.set_index("Category"))
@@ -100,13 +101,43 @@ else:
                 if submitted:
                     st.success(f"Event '{title}' created!")
 
-    # ---------------- PROJECTS ----------------
+    # ---------------- PROJECTS (Kanban) ----------------
     elif menu == "Projects":
-        st.title("🛠️ Projects")
-        for p in PROJECTS:
-            st.markdown(f"**{p['title']}** — {p['status']} *(Tech: {p['tech']})*")
+        st.title("🛠️ Projects — Kanban Board")
+
+        statuses = ["To Do", "In Progress", "Completed"]
+
+        cols = st.columns(len(statuses))
+        for idx, status in enumerate(statuses):
+            with cols[idx]:
+                st.subheader(status)
+                for i, project in enumerate(st.session_state["PROJECTS"]):
+                    if project["status"] == status:
+                        st.markdown(f"**{project['title']}**  \n_Tech: {project['tech']}_")
+                        if role in ["Admin","Team Lead"]:
+                            new_status = st.selectbox(
+                                f"Move '{project['title']}'",
+                                statuses,
+                                index=statuses.index(status),
+                                key=f"{project['title']}_select"
+                            )
+                            if new_status != status:
+                                st.session_state["PROJECTS"][i]["status"] = new_status
+                                st.rerun()
+                        st.divider()
+
         if role in ["Admin","Team Lead"]:
-            st.info("You can assign tasks and manage Kanban (future feature).")
+            st.subheader("➕ Add Project")
+            with st.form("new_proj"):
+                title = st.text_input("Project Title")
+                tech = st.text_input("Tech Stack")
+                submitted = st.form_submit_button("Add Project")
+                if submitted:
+                    st.session_state["PROJECTS"].append(
+                        {"title": title, "status": "To Do", "tech": tech}
+                    )
+                    st.success(f"Project '{title}' added!")
+                    st.rerun()
 
     # ---------------- MEMBERS ----------------
     elif menu == "Members":
