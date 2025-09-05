@@ -68,33 +68,50 @@ st.markdown("""
         color: white;
         text-align: center;
         padding: 3rem 1rem;
-        border-radius: 16px;
+        border-radius: 20px;
         margin-bottom: 2rem;
+        box-shadow: 0 0 25px rgba(142,64,255,0.6);
     }
     .section {
         padding: 2rem;
         margin: 1rem 0;
-        border-radius: 12px;
-        background: #1a1a2e;
+        border-radius: 16px;
+        background: rgba(255,255,255,0.05);
+        backdrop-filter: blur(10px);
     }
     .team-card {
         padding: 1rem;
-        border-radius: 12px;
+        border-radius: 16px;
         color: white;
-        margin: 0.5rem;
+        margin: 0.7rem;
         text-align: center;
         font-weight: 600;
-        box-shadow: 0px 4px 12px rgba(0,0,0,0.5);
+        box-shadow: 0px 4px 25px rgba(0,0,0,0.4);
+        transition: transform 0.3s;
+    }
+    .team-card:hover {
+        transform: scale(1.05);
     }
     .stButton button {
         background: linear-gradient(45deg, #00eaff, #8e40ff);
         color: white; border-radius: 12px; border: none;
         padding: 0.7rem 1.2rem; font-weight: 600;
+        box-shadow: 0px 0px 10px rgba(0,234,255,0.7);
     }
     .stButton button:hover {
         background: linear-gradient(45deg, #8e40ff, #00eaff);
         color: black;
     }
+    .badge {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        color: white;
+    }
+    .gold { background: linear-gradient(45deg, #FFD700, #FFA500); }
+    .silver { background: linear-gradient(45deg, #C0C0C0, #808080); }
+    .bronze { background: linear-gradient(45deg, #cd7f32, #8b4513); }
     </style>
 """, unsafe_allow_html=True)
 
@@ -163,6 +180,7 @@ if not st.session_state.logged_in:
 else:
     user = st.session_state.user
     role = user['role']
+    st.sidebar.markdown("### ⚡ Navigation")
     st.sidebar.success(f"✅ Logged in as {role}")
     if st.sidebar.button("🚪 Logout"):
         logout()
@@ -180,13 +198,18 @@ else:
             "Members": [8, 12, 6, 5, 7, 10, 20],
             "Active Projects": [3, 5, 2, 4, 3, 1, 0]
         })
-        st.dataframe(team_data)
         st.bar_chart(team_data.set_index("Team")["Members"])
 
         st.subheader("🏆 Leaderboard")
         leaderboard = pd.DataFrame.from_dict(st.session_state.scores, orient="index", columns=["Points"])
         leaderboard = leaderboard.sort_values("Points", ascending=False)
-        st.table(leaderboard)
+
+        for i, (name, row) in enumerate(leaderboard.iterrows()):
+            badge_class = "gold" if i == 0 else "silver" if i == 1 else "bronze" if i == 2 else ""
+            st.markdown(
+                f"<div class='badge {badge_class}'>{i+1}️⃣ {name} - {row['Points']} pts</div>",
+                unsafe_allow_html=True
+            )
 
     elif role == "Team Lead":
         st.header(f"👑 {user['team']} Lead Dashboard")
